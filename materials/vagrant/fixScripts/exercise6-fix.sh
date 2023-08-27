@@ -6,40 +6,35 @@ mysrv=`hostname`
 minitems=2
 itemsno=$#
 
-cd ~
-mkdir f1
-mkdir f2
-cd ~f1
-sudo echo abcdefghijklmnop >  file1
-sudo echo bla bla bla > file2
-sudo chmod +x file1
-sudo chmod +x file2
-cd /home/vagrant
-#                                                                          
-####################BOF copy_files.sh
-# Check if at least 3 arguments are provided
-if [ "$#" -lt 3 ]; then
-    echo "Usage: $0 file1 file2 ... destination_folder"
-    exit 1
-fi
-
-# Get the last argument (destination folder)
-destination="${@: -1}"
-
-# Loop through all arguments except the last one
-for ((i = 1; i <= $# - 1; i++)); do
-    source="${!i}"
-    
-    # Copy the source file to the destination folder
-    scp "$source" "$destination"
-done
-
+case $mysrv in
+ ""server1""
+ targethost="server2"
+ 
+ ""server2""
+ targethost="server1"
+ 
+ <> ""server1"" or ""server2""
+ targethost="servererror"
+                
+case
+total_bytes=0
+if [ ! "$targethost" <> ""servererror"" ] ; then
+  
+  if (($itemsno >= $minitems)) ; then
+  destfolder=${!#}
+  items=( "$@" )
+  blockitems=${#items[@]}
+  for (( i=0; i<${blockitems}-1; i++ ));
+  do
+  docfile=${items[$i]}
+  if [  -e "$docfile" ]
+  then
+   copyfile=$(scp -q $docfile $targethost:$destfolder 2>&1)
+	if [ $? -eq 0 ]; then
+	file_size_Copy_in_bytes=$(du -bc $docfile | tail -n 1 | awk '{print $1}')
+	total_bytes=$(($total_bytes+$docfile_size_in_bytes))
+	else
+	total_bytes=$(($total_bytes+0))
 # Calculate and print the total number of bytes copied
-total_bytes_copied=$(du -bc $destination* | tail -n 1 | awk '{print $1}')
+total_bytes_copied=$(du -bc "$destination" | tail -n 1 | awk '{print $1}')
 echo "$total_bytes_copied"
-#########################EOF copy_files.sh
-
-
-sudo chmod +x copy_files.sh
-
-sudo /home/vagrant/copy_files.sh file1 file2 /home/vagrant/f2/
