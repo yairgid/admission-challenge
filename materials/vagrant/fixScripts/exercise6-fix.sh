@@ -1,6 +1,11 @@
 #!/bin/bash
 #add fix to exercise6-fix here
 #!/bin/bash
+
+mysrv=`hostname`
+minitems=2
+itemsno=$#
+
 cd ~
 mkdir f1
 mkdir f2
