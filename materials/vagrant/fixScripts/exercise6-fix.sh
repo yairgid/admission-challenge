@@ -1,40 +1,54 @@
 #!/bin/bash
 #add fix to exercise6-fix here
-#!/bin/bash
 
-mysrv=`hostname`
-minitems=2
-itemsno=$#
+# Check for the minimum number of arguments
+if [ "$#" -lt 3 ]; then
+    echo "Usage: $0 file1 file2 ... destination_folder"
+    exit 1
+fi
 
-case $mysrv in
- ""server1""
- targethost="server2"
- 
- ""server2""
- targethost="server1"
- 
- <> ""server1"" or ""server2""
- targethost="servererror"
-                
-case
-total_bytes=0
-if [ ! "$targethost" <> ""servererror"" ] ; then
-  
-  if (($itemsno >= $minitems)) ; then
-  destfolder=${!#}
-  items=( "$@" )
-  blockitems=${#items[@]}
-  for (( i=0; i<${blockitems}-1; i++ ));
-  do
-  docfile=${items[$i]}
-  if [  -e "$docfile" ]
-  then
-   copyfile=$(scp -q $docfile $targethost:$destfolder 2>&1)
-	if [ $? -eq 0 ]; then
-	file_size_Copy_in_bytes=$(du -bc $docfile | tail -n 1 | awk '{print $1}')
-	total_bytes=$(($total_bytes+$docfile_size_in_bytes))
-	else
-	total_bytes=$(($total_bytes+0))
+# Get the last argument as the destination folder
+destination_folder="${!#}"
+HOSTNAME=`hostname`
+USR=`whoami`
+# Iterate over all arguments except the last one
+for ((i = 1; i < $#; i++)); do
+    file="${!i}"
+    # Check if the file exists
+    if [ ! -f "$file" ]; then
+        echo "File not found: $file"
+        exit 1
+    fi
+    # Check host
+    if [ "$HOSTNAME" == "server1" ]; then
+      if [ "$USR" == "root" ]; then
+         scp -o "StrictHostKeyChecking=no" -i /home/vagrant/.ssh/id_rsa $file vagrant@server2:$destination_folder 2>/dev/null
+       else
+         # Copy the file to the destination folder
+        scp -o "StrictHostKeyChecking=no" $file vagrant@server2:$destination_folder  2>/dev/null
+      fi
+    else
+      if [ "$USR" == "root" ]; then
+         scp -o "StrictHostKeyChecking=no" -i /home/vagrant/.ssh/id_rsa $file vagrant@server1:$destination_folder 2>/dev/null
+       else
+         # Copy the file to the destination folder
+        scp -o "StrictHostKeyChecking=no" $file vagrant@server1:$destination_folder 2>/dev/null
+      fi
+    fi
+
+    if [ "$?" -ne 0 ]; then
+        echo "Failed to copy $file to $destination_folder"
+        exit 1
+    fi
+done
+
 # Calculate and print the total number of bytes copied
-total_bytes_copied=$(du -bc "$destination" | tail -n 1 | awk '{print $1}')
+total_bytes_copied=0
+for ((i = 1; i < $#; i++)); do
+    file="${!i}"
+    file_size=$(stat -c %s "$file")
+    total_bytes_copied=$((total_bytes_copied + file_size))
+done
+
 echo "$total_bytes_copied"
+
